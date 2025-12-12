@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Daily Planner Pro (Local)</title>
+    <style>
+        /* (styles identical to your original but kept concise for readability) */
+        *{margin:0;padding:0;box-sizing:border-box}
+        @keyframes gradientFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(5deg)}}
+        @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+        @keyframes slideIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        body{
+            font-family:-apple-system,Segoe UI,Roboto,Arial;
+            background:linear-gradient(-45deg,#ee7752,#e73c7e,#23a6d5,#23d5ab,#667eea,#764ba2);
+            background-size:400% 400%;animation:gradientFlow 15s ease infinite;min-height:100vh;position:relative;overflow-x:hidden;
+        }
+        body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+            background:radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, rgba(255,255,255,0.12) 0%, transparent 50%),
+                      radial-gradient(circle at 40% 20%, rgba(255,255,255,0.06) 0%, transparent 50%);
+            pointer-events:none;z-index:0}
+        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.6);border-radius:50%;animation:float 8s infinite ease-in-out;z-index:0}
+        .container{max-width:1200px;margin:0 auto;padding:20px;position:relative;z-index:1}
+        nav{background:rgba(255,255,255,.12);backdrop-filter:blur(18px);border-radius:25px;padding:12px 22px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 40px rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.2);animation:slideIn .5s ease}
+        .logo{display:flex;align-items:center;gap:12px;color:white;font-size:1.3em;font-weight:800;text-shadow:2px 2px 6px rgba(0,0,0,.2)}
+        .logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2em;box-shadow:0 8px 20px rgba(102,126,234,.5);animation:pulse 2s infinite}
+        .nav-links{display:flex;gap:10px}
+        .nav-btn{background:rgba(255,255,255,.18);color:white;border:2px solid rgba(255,255,255,.2);padding:10px 18px;border-radius:12px;cursor:pointer;transition:all .25s;font-weight:600}
+        .nav-btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.32)}
+        .nav-btn.active{background:linear-gradient(135deg,#667eea,#764ba2);border-color:transparent}
+        .page{display:none;animation:slideIn .45s ease}
+        .page.active{display:block}
+        .hero{color:white;text-align:center;padding:48px 12px}
+        .hero h1{font-size:3em;margin-bottom:8px;text-shadow:3px 3px 12px rgba(0,0,0,.35);background:linear-gradient(45deg,#fff,#f0f0f0);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-top:20px}
+        .feature-card{background:rgba(255,255,255,.12);backdrop-filter:blur(16px);border-radius:16px;padding:20px;text-align:center;color:white;border:1px solid rgba(255,255,255,.12)}
+        .content-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-top:18px}
+        .card{background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-radius:14px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.15);border:1px solid rgba(255,255,255,.45)}
+        .card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+        .card-icon{width:44px;height:44px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white}
+        label{display:block;margin-bottom:6px;color:#444;font-weight:600}
+        input,textarea,select{width:100%;padding:12px 14px;border-radius:10px;border:2px solid #e0e0e0;font-size:1em}
+        textarea{min-height:90px;resize:vertical}
+        button{background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:12px 20px;border-radius:12px;font-weight:700;cursor:pointer}
+        .task-list{list-style:none;padding:0;margin:0}
+        .task-item{
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            padding:16px;
+            border:1px solid rgba(0, 0, 0, 0.1);
+            background:#ffffff;
+            box-shadow:0 4px 12px rgba(0,0,0,.05);
+        }
+        .task-item > div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .task-text{
+            flex:1;
+            font-size:1.1em;
+            font-weight:600;
+        }
+        .task-text.completed{text-decoration:line-through;opacity:.6}
+        .task-metadata{
+            font-size:0.85em;
+            color:#666;
+            display:flex;
+            gap:10px;
+        }
+        .task-time{padding:4px 8px}
+        .task-priority{padding:6px 10px;border-radius:20px;font-weight:700}
+        .priority-high{background:#ff6b6b;color:white;font-size:0.9em}
+        .priority-medium{background:#ffd93d;color:#333;font-size:0.9em}
+        .priority-low{background:#6bcf7f;color:white;font-size:0.9em}
+        .delete-btn{background:linear-gradient(135deg,#ff6b6b,#dc3545);padding:8px 12px;border-radius:10px;color:white;border:none}
+        .ai-response{background:linear-gradient(135deg,#f8f9fa,#e3e9f7);border-left:6px solid #667eea;padding:16px;border-radius:10px;white-space:pre-wrap;line-height:1.6}
+        .empty-state{text-align:center;color:#888;padding:18px}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+        .stat-card{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:14px;border-radius:10px;text-align:center}
+        .stat-number{font-size:1.6em;font-weight:800}
+        @media (max-width:768px){.hero h1{font-size:2em}.content-grid{grid-template-columns:1fr}}
+        /* Pomodoro small */
+        .pomodoro{display:flex;gap:8px;align-items:center}
+        .small-btn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .small-btn:hover {
+            background: #764ba2;
+        }
+        button.small-btn {
+            color: white;
+        }
+        button.small-btn:hover {
+            background: #764ba2;
+        }
+        .input-group {
+            margin-bottom: 12px; /* Add spacing between form fields */
+        }
+    </style>
+</head>
+<body>
+    <div class="particle" style="top:20%;left:10%;animation-delay:0s"></div>
+    <div class="particle" style="top:40%;left:80%;animation-delay:2s"></div>
+    <div class="particle" style="top:60%;left:30%;animation-delay:4s"></div>
+    <div class="particle" style="top:80%;left:70%;animation-delay:1s"></div>
+    <div class="particle" style="top:30%;left:50%;animation-delay:3s"></div>
+
+    <div class="container">
+        <nav>
+            <div class="logo">
+                <div class="logo-icon">🚀</div>
+                <span>PlannerAI Pro</span>
+            </div>
+            <div class="nav-links">
+                <button class="nav-btn active" onclick="showPage(event,'home')">Home</button>
+                <button class="nav-btn" onclick="showPage(event,'tasks')">Tasks</button>
+                <button class="nav-btn" onclick="showPage(event,'focus')">Focus Mode</button>
+                <button class="nav-btn" onclick="showPage(event,'ai')">AI Assistant</button>
+                <button class="nav-btn" onclick="showPage(event,'analytics')">Analytics</button>
+            </div>
+        </nav>
+
+        <!-- HOME -->
+        <div id="home" class="page active">
+            <div class="hero">
+                <h1>✨ Welcome to PlannerAI Pro</h1>
+                <p>Your intelligent companion for productivity and success — now with Focus Mode & Auto-scheduling.</p>
+            </div>
+            <div class="feature-grid">
+                <button class="feature-card" onclick="showPage(null, 'tasks')">
+                    <div style="font-size:28px">📋</div>
+                    <h3>Smart Task Management</h3>
+                    <p>Priorities, deadlines, and persistence.</p>
+                </button>
+                <button class="feature-card" onclick="showPage(null, 'focus')">
+                    <div style="font-size:28px">⚡</div>
+                    <h3>Focus Mode (Pomodoro)</h3>
+                    <p>Built-in Pomodoro timer to help you focus.</p>
+                </button>
+                <button class="feature-card" onclick="showPage(null, 'ai')">
+                    <div style="font-size:28px">🤖</div>
+                    <h3>AI Suggestions</h3>
+                    <p>Local AI fallback provides practical tips when offline.</p>
+                </button>
+                <button class="feature-card" onclick="showPage(null, 'analytics')">
+                    <div style="font-size:28px">⏱️</div>
+                    <h3>Auto-Schedule</h3>
+                    <p>Assign times to unscheduled tasks based on priority and available slots.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- TASKS -->
+        <div id="tasks" class="page">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-number" id="totalTasks">0</div><div>Total Tasks</div></div>
+                <div class="stat-card"><div class="stat-number" id="completedTasks">0</div><div>Completed</div></div>
+                <div class="stat-card"><div class="stat-number" id="pendingTasks">0</div><div>Pending</div></div>
+            </div>
+
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header"><div class="card-icon">➕</div><h2>Add New Task</h2></div>
+                    <div class="input-group"><label for="taskInput">Task Description</label><input id="taskInput" placeholder="What needs to be done?"></div>
+                    <div class="input-group"><label for="timeInput">Time (optional)</label><input id="timeInput" type="time"></div>
+                    <div class="input-group"><label for="priorityInput">Priority</label>
+                        <select id="priorityInput"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="addTask()">Add Task</button>
+                        <button onclick="autoSchedule()">Auto-Schedule</button>
+                        <button onclick="clearAllTasks()" style="background:linear-gradient(135deg,#ff6b6b,#dc3545)">Clear All</button>
+                    </div>
+
+                    <hr style="margin:14px 0">
+
+                    <div class="card-header"><div class="card-icon">📝</div><h2>Your Tasks</h2></div>
+                    <ul class="task-list" id="taskList"><div class="empty-state">No tasks yet. Create your first task!</div></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOCUS MODE -->
+        <div id="focus" class="page">
+            <div style="
+                max-width:520px;
+                margin:40px auto;
+                text-align:center;
+                background:rgba(255,255,255,.15);
+                backdrop-filter:blur(18px);
+                border-radius:20px;
+                padding:40px;
+                color:white;
+                box-shadow:0 20px 60px rgba(0,0,0,.25);
+            ">
+
+                <!-- Mode Switch -->
+                <div style="display:flex;justify-content:center;gap:12px;margin-bottom:20px">
+                    <button class="small-btn" onclick="startPomodoro()">Pomodoro</button>
+                    <button class="small-btn" onclick="startShortBreak()">Short Break</button>
+                    <button class="small-btn" onclick="startLongBreak()">Long Break</button>
+                </div>
+
+                <!-- Timer -->
+                <div style="
+                    font-size:96px;
+                    font-weight:800;
+                    letter-spacing:2px;
+                    margin:20px 0;
+                " id="focusTimer">
+                    25:00
+                </div>
+
+                <!-- Start, Pause, and Stop Buttons -->
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button style="
+                        padding:14px 50px;
+                        font-size:1.2em;
+                        border-radius:14px;
+                        background:white;
+                        color:#e05252;
+                        font-weight:800;
+                        border:none;
+                        cursor:pointer;
+                    " onclick="startPomodoro()">
+                        START
+                    </button>
+                    <button style="
+                        padding:14px 50px;
+                        font-size:1.2em;
+                        border-radius:14px;
+                        background:white;
+                        color:#e05252;
+                        font-weight:800;
+                        border:none;
+                        cursor:pointer;
+                    " onclick="pausePomodoro()">
+                        PAUSE
+                    </button>
+                </div>
+
+                <div style="margin-top:24px;opacity:.85">
+                    <strong>#1</strong><br/>
+                    Time to focus!
+                </div>
+
+                <!-- Task section -->
+                <div style="margin-top:32px;text-align:left">
+                    <h3 style="margin-bottom:10px">Tasks</h3>
+                    <div style="
+                        border:2px dashed rgba(255,255,255,.4);
+                        border-radius:14px;
+                        padding:16px;
+                        text-align:center;
+                        cursor:pointer;
+                    " onclick="showPage(null,'tasks')">
+                        ➕ Add Task
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- AI -->
+        <div id="ai" class="page">
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header"><div class="card-icon">🤖</div><h2>AI Assistant</h2></div>
+                    <div class="input-group"><label for="aiPrompt">Ask AI for help</label><textarea id="aiPrompt" placeholder="E.g., 'Help me prioritize my tasks for tomorrow'"></textarea></div>
+                    <div style="display:flex;gap:8px">
+                        <button id="aiBtn" onclick="getAIHelp()">Get AI Suggestions</button>
+                        <button onclick="quickPrompt('Help me create a morning routine')" class="small-btn">Morning Routine</button>
+                        <button onclick="quickPrompt('Suggest time management strategies')" class="small-btn">Time Mgmt</button>
+                        <button onclick="quickPrompt('Help me plan my week')" class="small-btn">Weekly Plan</button>
+                    </div>
+                    <div id="aiResponseCard" style="display:none;margin-top:12px"><div class="ai-response" id="aiResponse"></div></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><div class="card-icon">💡</div><h2>Quick Ideas</h2></div>
+                    <ul style="list-style:disc;padding-left:18px">
+                        <li>Use Auto-Schedule to set times for tasks without times.</li>
+                        <li>Use Focus Mode to complete a high-priority task each pomodoro.</li>
+                        <li>Enable Auto-mark to mark task done when pomodoro finishes.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics -->
+        <div id="analytics" class="page">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-number" id="completionRate">0%</div><div>Completion Rate</div></div>
+                <div class="stat-card"><div class="stat-number" id="avgTasksPerDay">0</div><div>Avg Tasks/Day</div></div>
+                <div class="stat-card"><div class="stat-number" id="streak">0</div><div>Day Streak</div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-icon">📊</div><h2>Your Progress</h2></div>
+                <div class="ai-response" id="progressText">
+                    <strong>🎯 Today's Achievements:</strong><br><br>
+                    You're making great progress! Use Auto-schedule and Focus Mode to keep it up.
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script>
+/* ---------- Data & Persistence ---------- */
+let tasks = [];
+const STORAGE_KEY = 'plannerai_tasks_v1';
+
+function saveTasks() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+function loadTasks() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    tasks = raw ? JSON.parse(raw) : [];
+}
+function clearAllTasks() {
+    if (!confirm('Clear ALL tasks?')) return;
+    tasks = [];
+    saveTasks();
+    renderTasks();
+    updateStats();
+}
+
+/* ---------- Navigation ---------- */
+function showPage(e, pageName) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(pageName).classList.add('active');
+    if (e && e.target) e.target.classList.add('active');
+}
+
+/* ---------- Task CRUD ---------- */
+function addTask() {
+    const text = document.getElementById('taskInput').value.trim();
+    const time = document.getElementById('timeInput').value;
+    const priority = document.getElementById('priorityInput').value;
+    if (!text) { alert('Please enter a task'); return; }
+    const task = { id: Date.now(), text, time: time || '', priority, completed:false, createdAt: new Date().toISOString() };
+    tasks.push(task);
+    saveTasks();
+    document.getElementById('taskInput').value = '';
+    document.getElementById('timeInput').value = '';
+    document.getElementById('priorityInput').value = 'medium';
+    renderTasks();
+    updateStats();
+}
+
+function toggleTask(id) {
+    const t = tasks.find(x => x.id === id);
+    if (t) { t.completed = !t.completed; saveTasks(); renderTasks(); updateStats(); }
+}
+function deleteTask(id) {
+    tasks = tasks.filter(x => x.id !== id);
+    saveTasks();
+    renderTasks();
+    updateStats();
+}
+
+/* ---------- Render & Stats ---------- */
+function renderTasks() {
+    const list = document.getElementById('taskList');
+    if (!tasks.length) { list.innerHTML = '<div class="empty-state">No tasks yet. Create your first task!</div>'; return; }
+    // sort: time first (existing times), then priority high->low, then createdAt
+    const sorted = [...tasks].sort((a,b)=>{
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        if (a.time && !b.time) return -1;
+        if (!a.time && b.time) return 1;
+        const pri = {'high':0,'medium':1,'low':2};
+        if (pri[a.priority] !== pri[b.priority]) return pri[a.priority]-pri[b.priority];
+        return new Date(a.createdAt) - new Date(b.createdAt);
+    });
+
+    list.innerHTML = sorted.map(t => `
+        <!-- Updated HTML structure for task item -->
+        <li class="task-item" title="Created: ${new Date(t.createdAt).toLocaleString()}">
+            <div>
+                <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})" />
+                <div class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</div>
+                <button class="delete-btn" onclick="deleteTask(${t.id})">Delete</button>
+            </div>
+            <div class="task-metadata">
+                ${t.time ? `<span class="task-time">${t.time}</span>` : '<span style="color:#999">No time</span>'}
+                <span class="task-priority priority-${t.priority}">${t.priority.toUpperCase()}</span>
+            </div>
+        </li>
+    `).join('');
+}
+
+function updateStats() {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    const pending = total - completed;
+    document.getElementById('totalTasks').textContent = total;
+    document.getElementById('completedTasks').textContent = completed;
+    document.getElementById('pendingTasks').textContent = pending;
+    document.getElementById('completionRate').textContent = total>0 ? Math.round((completed/total)*100)+'%' : '0%';
+    // avg tasks per day (simple heuristic: tasks / days since first task)
+    const days = daysSinceFirstTask();
+    document.getElementById('avgTasksPerDay').textContent = days>0 ? (Math.round((total/days)*10)/10) : total;
+    // streak = consecutive days with at least one completed task (we'll approximate using localStorage 'plannerai_streaks')
+    const streak = computeStreak();
+    document.getElementById('streak').textContent = streak;
+}
+
+function daysSinceFirstTask() {
+    if (!tasks.length) return 0;
+    const first = new Date(tasks.reduce((min,t)=> t.createdAt < min ? t.createdAt : min, tasks[0].createdAt));
+    const diffMs = new Date() - first;
+    return Math.max(1, Math.floor(diffMs / (1000*60*60*24)));
+}
+
+/* compute a simple streak by reading completedAt days in localStorage */
+function computeStreak() {
+    const key = 'plannerai_completed_days_v1';
+    const raw = localStorage.getItem(key);
+    const days = raw ? JSON.parse(raw) : [];
+    // days are stored as 'YYYY-MM-DD' strings
+    if (!days.length) return 0;
+    // compute consecutive days up to today
+    let count = 0;
+    let cur = new Date();
+    for (let i=0;;i++){
+        const check = new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()-i);
+        const s = check.toISOString().slice(0,10);
+        if (days.includes(s)) count++; else break;
+    }
+    return count;
+}
+
+function recordCompletionDayIfNeeded() {
+    const key = 'plannerai_completed_days_v1';
+    const raw = localStorage.getItem(key);
+    const days = raw ? JSON.parse(raw) : [];
+    const today = new Date().toISOString().slice(0,10);
+    if (tasks.some(t => t.completed) && !days.includes(today)) {
+        days.push(today);
+        localStorage.setItem(key, JSON.stringify(days));
+    }
+}
+
+/* ---------- Safe helper ---------- */
+function escapeHtml(str){ return str.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[ch])); }
+
+/* ---------- Auto-Schedule (Unique Feature) ----------
+   Assign times to tasks without times, prioritizing high -> medium -> low.
+   Simple algorithm: starting at next full hour, fill 30-min slots.
+*/
+function autoSchedule() {
+    if (!tasks.length) { alert('No tasks to schedule'); return; }
+    const unscheduled = tasks.filter(t => !t.time);
+    if (!unscheduled.length) { alert('All tasks already have times'); return; }
+
+    // start at next full hour
+    const now = new Date();
+    now.setMinutes(0,0,0);
+    now.setHours(now.getHours()+1);
+    // sort unscheduled by priority high->low
+    const priOrder = {high:0,medium:1,low:2};
+    unscheduled.sort((a,b)=> priOrder[a.priority]-priOrder[b.priority] || new Date(a.createdAt)-new Date(b.createdAt));
+    // assign 30 minute slots
+    for (let i=0;i<unscheduled.length;i++){
+        const slot = new Date(now.getTime() + i*30*60000);
+        const hh = slot.getHours().toString().padStart(2,'0');
+        const mm = slot.getMinutes().toString().padStart(2,'0');
+        unscheduled[i].time = `${hh}:${mm}`;
+    }
+    saveTasks();
+    renderTasks();
+    updateStats();
+    alert('Auto-schedule complete — check Your Tasks.');
+}
+
+/* ---------- Pomodoro Focus Mode ----------
+   Default 25:00 work, 5:00 short break. Auto-mark option marks the top incomplete high-priority task.
+*/
+let pom = { running: false, timeLeft: 25 * 60, timerId: null, work: true, cycles: 0 };
+
+function formatTime(s){ const m = Math.floor(s/60).toString().padStart(2,'0'); const sec = (s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
+function startPomodoro() {
+    if (pom.timerId) {
+        clearInterval(pom.timerId);
+        pom.timerId = null;
+    }
+    pom.running = false;
+    pom.timeLeft = 25 * 60; // Set to 25 minutes
+    pom.work = true;
+    if (document.getElementById('pomodoroTimer'))
+        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+    if (document.getElementById('focusTimer'))
+        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+}
+
+function pausePomodoro(){ if(pom.timerId) { clearInterval(pom.timerId); pom.timerId = null; pom.running = false; } }
+function resetPomodoro() {
+    if (pom.timerId) {
+        clearInterval(pom.timerId);
+        pom.timerId = null;
+    }
+    pom = { running: false, timeLeft: 25 * 60, work: true, cycles: 0 };
+    if (document.getElementById('pomodoroTimer'))
+        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+    if (document.getElementById('focusTimer'))
+        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+}
+function autoMarkTopTask(){
+    // find top priority incomplete task
+    const order = {high:0,medium:1,low:2};
+    const candidates = tasks.filter(t => !t.completed).sort((a,b)=> order[a.priority]-order[b.priority] || new Date(a.createdAt)-new Date(b.createdAt));
+    if (candidates.length) {
+        candidates[0].completed = true;
+        saveTasks(); renderTasks(); updateStats(); recordCompletionDayIfNeeded();
+    }
+}
+
+/* ---------- AI Assistant ----------
+   - If you set localStorage 'AI_API_KEY', the code will attempt to call your configured provider (not automatic).
+   - By default (no API key) uses a local JS fallback that generates helpful text based on tasks & prompt.
+*/
+function quickPrompt(text){ document.getElementById('aiPrompt').value = text; getAIHelp(); }
+
+async function getAIHelp() {
+    const prompt = document.getElementById('aiPrompt').value.trim();
+    const aiBtn = document.getElementById('aiBtn');
+    const aiCard = document.getElementById('aiResponseCard');
+    const aiResp = document.getElementById('aiResponse');
+    if (!prompt) { alert('Please enter a question or prompt for the AI'); return; }
+    aiBtn.disabled = true; aiBtn.textContent = 'Thinking...';
+    aiCard.style.display = 'block';
+    aiResp.textContent = 'Analyzing...';
+
+    const apiKey = localStorage.getItem('AI_API_KEY'); // optional for advanced users
+    try {
+        if (apiKey) {
+            // Example placeholder: you must implement provider-specific fetch + headers
+            // WARNING: For security, do not paste secrets into files shared publicly.
+            aiResp.textContent = 'Remote AI key detected but remote calling logic is not enabled in this demo. Use fallback or implement your fetch. See instructions in the README section below.';
+        } else {
+            // local fallback: simple rule-based suggestions
+            const text = generateAIFallback(prompt, tasks);
+            // small delay to feel 'thinking'
+            await new Promise(res => setTimeout(res, 600));
+            aiResp.textContent = text;
+        }
+    } catch (err) {
+        console.error(err);
+        aiResp.textContent = 'Error running AI: ' + err.message;
+    } finally {
+        aiBtn.disabled = false; aiBtn.textContent = 'Get AI Suggestions';
+    }
+}
+
+/* Simple local "AI" that inspects tasks and prompt and returns structured suggestions.
+   It's not a real ML model — but it's helpful when offline and demonstrates behavior.
+*/
+function generateAIFallback(prompt, tasksList) {
+    const lower = prompt.toLowerCase();
+    const hasHigh = tasksList.some(t => t.priority === 'high' && !t.completed);
+    const pending = tasksList.filter(t => !t.completed);
+    let out = `AI Assistant (local fallback)\n\nPrompt: "${prompt}"\n\n`;
+
+    if (lower.includes('priorit') || lower.includes('which to do')) {
+        out += 'Suggested ordering:\n';
+        const order = {high:0,medium:1,low:2};
+        const sorted = [...pending].sort((a,b)=> order[a.priority]-order[b.priority] || new Date(a.createdAt)-new Date(b.createdAt));
+        if (!sorted.length) out += '- No pending tasks. Add some tasks first.\n';
+        else sorted.forEach((t,i)=> out += `${i+1}. ${t.text} ${t.time ? `at ${t.time}` : ''} [${t.priority}]\n`);
+        out += '\nTip: Use Auto-Schedule to assign times quickly.';
+        return out;
+    }
+
+    if (lower.includes('morning') || lower.includes('routine')) {
+        out += 'Morning routine suggestion:\n1) High-priority task (15-30 min)\n2) Quick review of tasks (5 min)\n3) Start first pomodoro session\n4) Tackle top 2 medium tasks\n\n';
+        out += hasHigh ? 'You have high-priority items — start with them.' : 'No high-priority items found — focus on medium tasks.';
+        return out;
+    }
+
+    if (lower.includes('productive') || lower.includes('productiv')) {
+        out += 'Productivity tips:\n- Break large tasks into 25-min focused pomodoro increments.\n- Schedule high-priority tasks in the morning.\n- Limit distractions and use the Focus Mode here.\n';
+        if (pending.length) out += '\nTop 3 pending:\n' + pending.slice(0,3).map((t,i)=> `${i+1}. ${t.text} [${t.priority}]`).join('\n');
+        return out;
+    }
+
+    // Generic fallback
+    out += 'General suggestions:\n- Prioritize tasks with deadlines.\n- Use Auto-schedule to fill empty slots.\n- Use Focus Mode (Pomodoro) to work in focused intervals.\n\n';
+    if (pending.length) out += 'Pending tasks:\n' + pending.slice(0,5).map((t,i)=> `${i+1}. ${t.text} [${t.priority}] ${t.time ? 'at '+t.time : ''}`).join('\n');
+    return out;
+}
+
+/* ---------- Init ---------- */
+function init() {
+    loadTasks();
+    renderTasks();
+    updateStats();
+    // update completion days if there are completed tasks already
+    recordCompletionDayIfNeeded();
+    // set pomodoro display
+    document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+}
+init();
+
+/* ---------- keyboard shortcuts ---------- */
+document.getElementById('taskInput').addEventListener('keypress', function(e){ if (e.key==='Enter') addTask(); });
+
+function startShortBreak() {
+    if (pom.timerId) {
+        clearInterval(pom.timerId);
+        pom.timerId = null;
+    }
+    pom.running = false;
+    pom.timeLeft = 5 * 60; // Set to 5 minutes
+    pom.work = false;
+    if (document.getElementById('pomodoroTimer'))
+        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+    if (document.getElementById('focusTimer'))
+        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+}
+
+function startLongBreak() {
+    if (pom.timerId) {
+        clearInterval(pom.timerId);
+        pom.timerId = null;
+    }
+    pom.running = false;
+    pom.timeLeft = 15 * 60; // Set to 15 minutes
+    pom.work = false;
+    if (document.getElementById('pomodoroTimer'))
+        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+    if (document.getElementById('focusTimer'))
+        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+}
+
+/* ---------- Motivation Engine: Show uplifting toast notifications every 30 minutes ---------- */
+function startMotivationEngine() {
+    const messages = [
+        "You’re doing great! One step at a time.",
+        "Ready for your next Pomodoro?",
+        "Hydration check 💧",
+    ];
+
+    setInterval(() => {
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        showToast(message);
+    }, 1 * 60 * 1000); // Every 30 minutes
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.background = 'rgba(0, 0, 0, 0.8)';
+    toast.style.color = 'white';
+    toast.style.padding = '10px 20px';
+    toast.style.borderRadius = '8px';
+    toast.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    toast.style.zIndex = '1000';
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 5000); // Toast disappears after 5 seconds
+}
+
+// Start the Motivation Engine when the app initializes
+startMotivationEngine();
+</script>
+</body>
+</html>
