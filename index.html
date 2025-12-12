@@ -233,7 +233,7 @@
                         font-weight:800;
                         border:none;
                         cursor:pointer;
-                    " onclick="startPomodoro()">
+                    " onclick="startCurrentMode()">
                         START
                     </button>
                     <button style="
@@ -490,20 +490,50 @@ function autoSchedule() {
    Default 25:00 work, 5:00 short break. Auto-mark option marks the top incomplete high-priority task.
 */
 let pom = { running: false, timeLeft: 25 * 60, timerId: null, work: true, cycles: 0 };
+let currentMode = 'pomodoro'; // Default mode
 
 function formatTime(s){ const m = Math.floor(s/60).toString().padStart(2,'0'); const sec = (s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
-function startPomodoro() {
+function startCountdown() {
     if (pom.timerId) {
         clearInterval(pom.timerId);
-        pom.timerId = null;
     }
+    pom.running = true;
+    pom.timerId = setInterval(() => {
+        if (pom.timeLeft > 0) {
+            pom.timeLeft--;
+            const formattedTime = formatTime(pom.timeLeft);
+            if (document.getElementById('pomodoroTimer'))
+                document.getElementById('pomodoroTimer').textContent = formattedTime;
+            if (document.getElementById('focusTimer'))
+                document.getElementById('focusTimer').textContent = formattedTime;
+        } else {
+            clearInterval(pom.timerId);
+            pom.timerId = null;
+            pom.running = false;
+            alert(pom.work ? 'Pomodoro session complete! Take a break.' : 'Break over! Time to focus.');
+        }
+    }, 1000);
+}
+function setMode(mode) {
+    currentMode = mode;
+}
+
+function startCurrentMode() {
+    if (!pom.running) {
+        startCountdown();
+    }
+}
+
+function startPomodoro() {
+    setMode('pomodoro');
     pom.running = false;
     pom.timeLeft = 25 * 60; // Set to 25 minutes
     pom.work = true;
+    const formattedTime = formatTime(pom.timeLeft);
     if (document.getElementById('pomodoroTimer'))
-        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+        document.getElementById('pomodoroTimer').textContent = formattedTime;
     if (document.getElementById('focusTimer'))
-        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+        document.getElementById('focusTimer').textContent = formattedTime;
 }
 
 function pausePomodoro(){ if(pom.timerId) { clearInterval(pom.timerId); pom.timerId = null; pom.running = false; } }
@@ -618,31 +648,27 @@ init();
 document.getElementById('taskInput').addEventListener('keypress', function(e){ if (e.key==='Enter') addTask(); });
 
 function startShortBreak() {
-    if (pom.timerId) {
-        clearInterval(pom.timerId);
-        pom.timerId = null;
-    }
+    setMode('shortBreak');
     pom.running = false;
     pom.timeLeft = 5 * 60; // Set to 5 minutes
     pom.work = false;
+    const formattedTime = formatTime(pom.timeLeft);
     if (document.getElementById('pomodoroTimer'))
-        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+        document.getElementById('pomodoroTimer').textContent = formattedTime;
     if (document.getElementById('focusTimer'))
-        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+        document.getElementById('focusTimer').textContent = formattedTime;
 }
 
 function startLongBreak() {
-    if (pom.timerId) {
-        clearInterval(pom.timerId);
-        pom.timerId = null;
-    }
+    setMode('longBreak');
     pom.running = false;
     pom.timeLeft = 15 * 60; // Set to 15 minutes
     pom.work = false;
+    const formattedTime = formatTime(pom.timeLeft);
     if (document.getElementById('pomodoroTimer'))
-        document.getElementById('pomodoroTimer').textContent = formatTime(pom.timeLeft);
+        document.getElementById('pomodoroTimer').textContent = formattedTime;
     if (document.getElementById('focusTimer'))
-        document.getElementById('focusTimer').textContent = formatTime(pom.timeLeft);
+        document.getElementById('focusTimer').textContent = formattedTime;
 }
 
 /* ---------- Motivation Engine: Show uplifting toast notifications every 30 minutes ---------- */
